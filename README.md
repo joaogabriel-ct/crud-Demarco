@@ -1,6 +1,6 @@
 # Meu Aplicativo Flask
 
-Este é um aplicativo Flask simples para demonstrar o uso de um README.
+Este é um aplicativo Flask simples para demonstrar o uso de uma API Rest
 
 ## Instalação
 
