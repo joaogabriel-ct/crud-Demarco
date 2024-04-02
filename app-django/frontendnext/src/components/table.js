@@ -1,10 +1,8 @@
+import { useSession } from '@/service/auth/session';
 import React, { useState, useMemo } from 'react';
 import DataTable from 'react-data-table-component';
 import styled from 'styled-components';
-import ModalEditAppointment from './modalEditAppointment';
-import ModalView from './modalViewAppointment';
-import ModalNumbersTable from './modalNumbers';
-
+import EmployeeModal from '@/components/employeeModal'; // Importe o modal de empregado
 
 const DateInputWrapper = styled.div`
   display: inline-block;
@@ -34,12 +32,6 @@ const DateInput = ({ label, value, onChange }) => {
     );
 };
 
-const selectStatus = [
-    { value: '1', label: 'Agendado' },
-    { value: '2', label: 'Em andamento' },
-    { value: '3', label: 'Finalizado' },
-    { value: '4', label: 'Com Erro' },
-];
 
 const formatDate = (isoString) => {
     const date = new Date(isoString);
@@ -56,23 +48,8 @@ export default function AppointmentAdmin({ salesData }) {
     const [statusFilter, setStatusFilter] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingAppointment, setEditingAppointment] = useState(null);
-    const [isNumbersModalOpen, setIsNumbersModalOpen] = useState(false);
-    const [currentNumbersData, setCurrentNumbersData] = useState([]);
-
-    const handleViewClick = (appointment) => {
-        setSelectedAppointment(appointment);
-        setIsModalOpen(true);
-        setIsEditModalOpen(false);
-    };
-
-    const handleNumbersClick = (appointment) => {
-        setCurrentNumbersData(appointment);
-        setIsNumbersModalOpen(true);
-    };
+    const { data: session } = useSession();
+    const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false); 
 
     const customStyles = {
         rows: {
@@ -95,75 +72,63 @@ export default function AppointmentAdmin({ salesData }) {
     };
     const Columns = [
         {
-            name: 'Campanha',
-            selector: row => row.campaign_name,
+            name: 'Nome',
+            selector: row => row.nome,
             sortable: true,
-            cell: row => <a >{row.campaign_name}</a>
+            cell: row => <a > {row.nome}</a>
         },
         {
-            name: 'Data do agendamento',
-            selector: row => formatDate(row.schedule_date),
+            name: 'CPF',
+            selector: row => row.cpf,
+            sortable: true,
+            cell: row => <a >{row.cpf}</a>
+        },
+        {
+            name: 'Data de Admissão',
+            selector: row => formatDate(row.data_admissao),
             sortable: true,
             cell: row => (
                 <a>
-                    {formatDate(row.schedule_date)}
+                    {formatDate(row.data_admissao)}
                 </a>
             )
         },
+       
         {
-            name: 'Status',
-            selector: row => row.STATUS?.status,
+            name: 'Cargo',
+            selector: row => row.cargo,
             sortable: true,
-            cell: row => <a > {row.STATUS?.status}</a>
-        },
-        {
-            name: 'numeros totais',
-            selector: row => row.number_valid,
-            sortable: true,
-            cell: row => <a onClick={() => handleNumbersClick(row.telefones)}>
-                {row.number_valid}
+            cell: row => <a>
+                {row.cargo}
             </a>
-        },
-        {
-            name: 'Ações',
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            cell: row => (
-                <div className="flex justify-start border rounded-md">
-                    <button
-                        onClick={() => handleViewClick(row)}
-                        className="p-2 bg-green-500 text-white rounded hover:bg-green-700 focus:outline-none"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        </svg>
-
-                    </button>
-                </div>
-            ),
         },
     ];
     
     const filteredItems = useMemo(() => {
         return salesData.filter(item => {
-            const matchesCampaignName = item.campaign_name.toLowerCase().includes(filterText.toLowerCase());
-            const matchesStatus = statusFilter ? item.STATUS?.status === statusFilter : true;
-            const itemDate = new Date(item.schedule_date).getTime();
+            const matchesCampaignName = item.nome.toLowerCase().includes(filterText.toLowerCase());
+            const itemDate = new Date(item.data_admissao).getTime();
             const start = startDate ? new Date(startDate).getTime() : null;
-            const end = endDate ? new Date(endDate).getTime() : null;
-
             const matchesStartDate = start ? itemDate >= start : true;
-            const matchesEndDate = end ? itemDate <= end : true;
-
-            return matchesCampaignName && matchesStatus && matchesStartDate && matchesEndDate;
+            return matchesCampaignName  && matchesStartDate ;
         });
     }, [filterText, statusFilter, startDate, endDate, salesData]);
 
+    const handleOpenEmployeeModal = () => {
+        if (session) {
+            setIsEmployeeModalOpen(true);
+        } else {
+            console.log('Usuário não autenticado. Faça login para acessar esta funcionalidade.');
+        }
+    };
+
+    const handleCloseEmployeeModal = () => {
+        setIsEmployeeModalOpen(false);
+    };
+
     return (
-        <div className="p-4">
-            <h2 className="text-xl font-semibold text-center mb-4">Agendamentos</h2>
+        <div className="p-4 m-8">
+            <h2 className="text-xl font-semibold text-center mb-4">Empregados</h2>
             <div className="flex flex-wrap -mx-2 mb-4">
                 <div className="px-2 w-full sm:w-1/2 lg:w-1/4">
                     <input
@@ -175,26 +140,15 @@ export default function AppointmentAdmin({ salesData }) {
                     />
                 </div>
                 <div className="px-2 w-full sm:w-1/2 lg:w-1/4">
-                    <select
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                        className="border border-gray-300 rounded-md p-2 w-full"
-                    >
-                        <option value="">Todos os Status</option>
-                        {selectStatus.map(option => (
-                            <option key={option.value} value={option.label}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="px-2 w-full sm:w-1/2 lg:w-1/4">
                     <DateInput label="De" value={startDate} onChange={e => setStartDate(e.target.value)} />
                 </div>
-                <div className="px-2 w-full sm:w-1/2 lg:w-1/4">
-                    <DateInput label="Até" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                </div>
             </div>
+            {session && (
+                <button className="bg-blue-600" onClick={handleOpenEmployeeModal}>
+                    Adicionar Empregado
+                </button>
+            )}
+            <EmployeeModal show={isEmployeeModalOpen} handleClose={handleCloseEmployeeModal} />
             <DataTable
                 columns={Columns}
                 data={filteredItems}

@@ -29,7 +29,7 @@ export default function Login() {
         const session = await authService.getSession();
         console.log(session);
         if (session.data.user.is_superUser) {
-          router.push('/admin/dashboard');
+          router.push('/dashboard');
         } else {
           router.push('/dashboard');
         }
